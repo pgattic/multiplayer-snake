@@ -32,7 +32,7 @@ const
 	},
 	startScore = 5,
 	foodValue = 5,
-	advanceRate = 8; // milliseconds that pass between each frame
+	advanceRate = 4; // milliseconds that pass between each frame
 
 var
 	unit = 24,
@@ -50,6 +50,7 @@ var
 	],
 	startDirection = [3, 1, 3, 1],
 	active = [false, false, false, false],
+	deathRow = [false, false, false, false],
 	body = [
 		[[...startLocation[0]]],
 		[[...startLocation[1]]],
@@ -58,7 +59,8 @@ var
 	],
 	keyQueue = [[],[],[],[]],
 	direction = [...startDirection],
-	score = [startScore, startScore, startScore, startScore];
+	score = [startScore, startScore, startScore, startScore],
+	highscore = [...score];
 
 document.onkeydown = (e) => {
 	var key = e.key.toLowerCase();
@@ -77,16 +79,10 @@ document.onkeydown = (e) => {
 	var num = Number(key)-1;
 	if (num < 4 && num >= 0) { // spawn players
 		if (active[num]) {
-			killPlayer(num);
+			deathRow[num] = true;
 		}
 		active[num] = !active[num];
 	}
-}
-
-function killPlayer(i) {
-	body[i] = [[...startLocation[i]]];
-	direction[i] = startDirection[i];
-	score[i] = startScore;
 }
 
 function directPlayers() {
@@ -95,7 +91,7 @@ function directPlayers() {
 			if (keyQueue[i].length > 0) {direction[i] = keyQueue[i][0]; keyQueue[i].shift(); }
 			var potential = shiftPlayer([...body[i][0]], direction[i]);
 			if (potential[0] < 0 || potential[0] > dimension[0]-1 || potential[1] < 0 || potential[1] > dimension[1]-1) {
-				killPlayer(i);
+				deathRow[i] = true;
 			} else {
 				body[i].unshift(potential);
 				if (body[i].length > score[i]) { body[i].pop(); }
@@ -104,24 +100,60 @@ function directPlayers() {
 	}
 }
 
+function generateFood() {
+	var foodCheck = true;
+	var foodX, foodY;
+	var loopCounter = 0;
+	do {
+		foodCheck = true;
+		foodX = Math.floor(Math.random() * dimension[0]);
+		foodY = Math.floor(Math.random() * dimension[1]);
+		loopCounter++;
+		for (var i = 0; i < nOfPlayers; i++) {
+			for (var e = 0; e < body[i].length; e++) {
+				if (body[i][e][0] == foodX && body[i][e][1] == foodY) {
+					foodCheck = false;
+				}
+			}
+		}
+	} while (!foodCheck);
+	food = [foodX, foodY];
+}
+
+
 function eatFood() {
 	for (var i = 0; i < nOfPlayers; i++) {
 		if (body[i][0][0] == food[0] && body[i][0][1] == food[1]) {
-			score[0] += foodValue;
-			food[0] = Math.floor(Math.random() * dimension[0]);
-			food[1] = Math.floor(Math.random() * dimension[1]);
+			score[i] += foodValue;
+			if (score[i] > highscore[i]) {highscore[i] = score[i];}
+			generateFood();
 		}
 	}
 }
 
 function die() {
 	for (var i = 0; i < nOfPlayers; i++) { // player dying
-		for (var e = 0; e < nOfPlayers; e++) { // player being run into
-			for (var t = (i==e?1:0); t < body[e].length; t++) {
-				if (body[i][0][0] == body[e][t][0] && body[i][0][1] == body[e][t][1]) {
-					killPlayer(i);
+		if (active[i]) {
+			for (var e = 0; e < nOfPlayers; e++) { // player being run into
+				if (active[e]) {
+					for (var t = (i==e?1:0); t < body[e].length; t++) {
+						if (body[i][0][0] == body[e][t][0] && body[i][0][1] == body[e][t][1]) {
+							deathRow[i] = true;
+						}
+					}
 				}
 			}
+		}
+	}
+}
+
+function killPlayers() {
+	for (var i = 0; i < nOfPlayers; i++) {
+		if (deathRow[i]) {
+			body[i] = [[...startLocation[i]]];
+			direction[i] = startDirection[i];
+			score[i] = startScore;
+			deathRow[i] = false;
 		}
 	}
 }
@@ -143,6 +175,9 @@ function resizeCanvas() {
 		[0, dimension[1]-1],
 		[dimension[0]-1, dimension[1]-1],
 	];
+	if (food[0] > dimension[0] - 1 || food[1] > dimension[1] - 1) {
+		generateFood();
+	}
 }
 
 function grid() {
@@ -176,13 +211,55 @@ function drawPlayers() {
 		if (active[i]) {
 			ctx.beginPath();
 			ctx.moveTo(body[i][0][0]*unit+unit/2, body[i][0][1]*unit+unit/2);
-			for (var s = 0; s < body[i].length; s++) {
-				ctx.lineTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
-				ctx.stroke();
-				ctx.beginPath();
-				ctx.moveTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
+			for (var s = 1; s < body[i].length; s++) {
+				if (s == body[i].length - 1 || !(body[i][s-1][0] == body[i][s+1][0] || body[i][s-1][1] == body[i][s+1][1])) {
+					ctx.lineTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.moveTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
+				}
 			}
 			ctx.stroke();
+		}
+	}
+}
+
+function spawnPoints() {
+	for (var i = 0; i < nOfPlayers; i++) {
+		var x = (startLocation[i][0] + 0.5) * unit;
+		var y = (startLocation[i][1] + 0.5) * unit;
+		var gradient = ctx.createRadialGradient(x, y, 0, x, y, 128);
+		gradient.addColorStop(0, colors[i]);
+		gradient.addColorStop(1, "rgba(0,0,0,0)");
+		ctx.beginPath();
+		ctx.globalAlpha = 0.4;
+		ctx.fillStyle = gradient;
+		ctx.arc(x, y, 128, 0, Math.PI*2);
+		ctx.fill();
+		ctx.globalAlpha = 1;
+	}
+}
+
+function scoreBoards() {
+	var TBLoc = [
+		[8, 20, "left"],
+		[canvas.width - 8, 20, "right"],
+		[8, canvas.height - 24, "left"],
+		[canvas.width - 8, canvas.height - 24, "right"],
+	]
+	ctx.font = "bold 12px Arial"
+	ctx.fillStyle = bgColor[Math.abs(darkMode-1)];
+	ctx.beginPath();
+	for (var i = 0; i < nOfPlayers; i++) {
+		ctx.textAlign =  TBLoc[i][2];
+		if (active[i]) {
+			ctx.fillText(`Score: ${score[i]}`, TBLoc[i][0], TBLoc[i][1]);
+			ctx.fillText(`Highscore: ${highscore[i]}`, TBLoc[i][0], TBLoc[i][1] + 16);
+		} else {
+			ctx.fillText((`Join with the "${i+1}" key!`), TBLoc[i][0], TBLoc[i][1]);
+			var controlKeys = (controls[i][0]+controls[i][1]+controls[i][2]+controls[i][3]).toUpperCase();
+			if (controlKeys.length > 4) {controlKeys = "the arrow keys"}
+			ctx.fillText(`Control with ${controlKeys}!`, TBLoc[i][0], TBLoc[i][1] + 16);
 		}
 	}
 }
@@ -193,6 +270,8 @@ function draw() {
 	grid();
 	drawFood();
 	drawPlayers();
+	spawnPoints();
+	scoreBoards();
 }
 
 function main() {
@@ -201,6 +280,7 @@ function main() {
 		calculate();
 		frameCounter = 0;
 	}
+	killPlayers();
 	draw();
 	requestAnimationFrame(main);
 }
@@ -217,5 +297,23 @@ function init() {
 	];
 	requestAnimationFrame(main);
 }
+
+
+				/* Dark Mode Code */
+ 
+const
+	rootColors = $(":root").style,
+	cScheme = ["light", "dark"],
+	bgColor = ["#eee","#111"];
+
+var darkMode = Number(localStorage.getItem("darkMode")) || 0; // 0 for light mode, 1 for dark mode
+
+function refreshColors() {
+	var i = Number(darkMode);
+	$(":root").style="color-scheme: " + cScheme[i];
+	rootColors.setProperty("--bg-color", bgColor[i]);
+}
+
+refreshColors();
 
 init();
