@@ -57,6 +57,7 @@ var
 		[[...startLocation[2]]],
 		[[...startLocation[3]]],
 	],
+	deadPlayers = [],
 	keyQueue = [[],[],[],[]],
 	direction = [...startDirection],
 	score = [startScore, startScore, startScore, startScore],
@@ -150,6 +151,7 @@ function die() {
 function killPlayers() {
 	for (var i = 0; i < nOfPlayers; i++) {
 		if (deathRow[i]) {
+			deadPlayers.unshift([[...body[i]], colors[i]]);
 			body[i] = [[...startLocation[i]]];
 			direction[i] = startDirection[i];
 			score[i] = startScore;
@@ -203,23 +205,36 @@ function drawFood() {
 	ctx.fill();
 }
 
+function drawBody(b) {
+	ctx.beginPath();
+	ctx.moveTo(b[0][0]*unit+unit/2, b[0][1]*unit+unit/2);
+	for (var s = 1; s < b.length; s++) {
+		if (s == b.length - 1 || !(b[s-1][0] == b[s+1][0] || b[s-1][1] == b[s+1][1])) {
+			ctx.lineTo(b[s][0]*unit+unit/2, b[s][1]*unit+unit/2);
+		}
+	}
+	ctx.stroke();
+}
+
 function drawPlayers() {
-	ctx.lineCap = "round";
+	ctx.lineCap = "square";
 	ctx.lineWidth = unit - 2;
+	ctx.globalAlpha = 0.3;
+	for (var i = 0; i < deadPlayers.length; i++) {
+		ctx.strokeStyle = deadPlayers[i][1];
+		drawBody(deadPlayers[i][0]);
+	}
+	for (var i = 0; i < deadPlayers.length; i++) {
+		deadPlayers[i][0].pop();
+		if (deadPlayers[i][0].length < 1) {
+			deadPlayers.splice(i, 1);
+		}
+	}
+	ctx.globalAlpha = 1;
 	for (var i = 0; i < nOfPlayers; i++) {
-		ctx.strokeStyle = colors[i];
 		if (active[i]) {
-			ctx.beginPath();
-			ctx.moveTo(body[i][0][0]*unit+unit/2, body[i][0][1]*unit+unit/2);
-			for (var s = 1; s < body[i].length; s++) {
-				if (s == body[i].length - 1 || !(body[i][s-1][0] == body[i][s+1][0] || body[i][s-1][1] == body[i][s+1][1])) {
-					ctx.lineTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
-					ctx.stroke();
-					ctx.beginPath();
-					ctx.moveTo(body[i][s][0]*unit+unit/2, body[i][s][1]*unit+unit/2);
-				}
-			}
-			ctx.stroke();
+			ctx.strokeStyle = colors[i];
+			drawBody(body[i]);
 		}
 	}
 }
@@ -247,7 +262,7 @@ function scoreBoards() {
 		[8, canvas.height - 24, "left"],
 		[canvas.width - 8, canvas.height - 24, "right"],
 	]
-	ctx.font = "bold 12px Arial"
+	ctx.font = "bold 16px Arial"
 	ctx.fillStyle = bgColor[Math.abs(darkMode-1)];
 	ctx.beginPath();
 	for (var i = 0; i < nOfPlayers; i++) {
@@ -304,7 +319,7 @@ function init() {
 const
 	rootColors = $(":root").style,
 	cScheme = ["light", "dark"],
-	bgColor = ["#eee","#111"];
+	bgColor = ["#fff","#111"];
 
 var darkMode = Number(localStorage.getItem("darkMode")) || 0; // 0 for light mode, 1 for dark mode
 
