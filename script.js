@@ -4,6 +4,11 @@ const
 	$=x=>{return document.querySelector(x)},
 	canvas = $("#canvas"),
 	ctx = canvas.getContext("2d"),
+	menu = $("#menu"),
+	darkBox = $("#darkBox"),
+	unitBox = $("#unitBox"),
+	foodValBox = $("#foodValBox"),
+	foodAmtBox = $("#foodAmtBox"),
 	
 	colors = ["blue", "red", "green", "orange"],
 	controls = [
@@ -29,16 +34,17 @@ const
 				break;
 		}
 		return p;
-	},
-	startScore = 5,
-	foodValue = 5,
-	advanceRate = 4; // milliseconds that pass between each frame
+	};
 
 var
+	startScore = 5,
+	foodValue = 5,
+	amtOfFood = 3,
+	advanceRate = 4, // milliseconds that pass between each frame
 	unit = 24,
 	dimension = [0,0],
 	food = [],
-	paused = false,
+	paused = true,
 	nOfPlayers = 4,
 	frameCounter = 0,
 
@@ -58,29 +64,58 @@ var
 		[[...startLocation[3]]],
 	],
 	deadPlayers = [],
+	playerFood = [[],[],[],[]],
 	keyQueue = [[],[],[],[]],
 	direction = [...startDirection],
-	score = [startScore, startScore, startScore, startScore],
-	highscore = [...score];
+	score = [],
+	highscore = [0, 0, 0, 0];
+
+function applySettings() {
+	darkMode = Boolean(darkBox.checked);
+	unit = Number(unitBox.value);
+	$("#unitOut").innerText = unit;
+	foodValue = Number(foodValBox.value);
+	amtOfFood = Number(foodAmtBox.value);
+	startScore = Number($("#startScoreBox").value);
+	refreshColors();
+}
+
+function togglePause() {
+	paused = !paused;
+	menu.style.display = paused? "block":"none";
+}
+
+function resetOptions() {
+	darkBox.checked = false;
+	unitBox.value = 24;
+	$("#unitOut").innerText = unit;
+	foodValBox.value = 5;
+	foodAmtBox.value = 3;
+	$("#startScoreBox").value = 5;
+	$("#pFoodBox").checked = true;
+	applySettings();
+}
 
 document.onkeydown = (e) => {
-	var key = e.key.toLowerCase();
-	for (var p = 0; p < controls.length; p++) {
-		if (active[p]) {
-			for (var c = 0; c < controls[p].length; c++) {
-				if (key == controls[p][c] && c%2 != (keyQueue[p].length?keyQueue[p][keyQueue[p].length-1]:direction[p])%2) {
-					keyQueue[p].push(c);
+	if (e.key == "Escape") { togglePause() }
+	if (!paused) {
+		var key = e.key.toLowerCase();
+		for (var p = 0; p < controls.length; p++) {
+			if (active[p]) {
+				for (var c = 0; c < controls[p].length; c++) {
+					if (key == controls[p][c] && c%2 != (keyQueue[p].length?keyQueue[p][keyQueue[p].length-1]:direction[p])%2) {
+						keyQueue[p].push(c);
+					}
 				}
 			}
 		}
 	}
-	if (key == "escape") {
-		paused = !paused;
-	}
 	var num = Number(key)-1;
-	if (num < 4 && num >= 0) { // spawn players
+	if (num < 4 && num >= 0 && e.target.tagName == "BODY") { // spawn players
 		if (active[num]) {
 			deathRow[num] = true;
+		} else {
+			score[num] = startScore;
 		}
 		active[num] = !active[num];
 	}
@@ -115,19 +150,42 @@ function generateFood() {
 				if (body[i][e][0] == foodX && body[i][e][1] == foodY) {
 					foodCheck = false;
 				}
+				for (var f of food) {
+					if (f[0] == foodX && f[1] == foodY) {
+						foodCheck = false;
+					}
+				}
 			}
 		}
 	} while (!foodCheck);
-	food = [foodX, foodY];
+	food.unshift([foodX, foodY]);
 }
 
 
 function eatFood() {
 	for (var i = 0; i < nOfPlayers; i++) {
-		if (body[i][0][0] == food[0] && body[i][0][1] == food[1]) {
-			score[i] += foodValue;
-			if (score[i] > highscore[i]) {highscore[i] = score[i];}
-			generateFood();
+		for (var e = 0; e < food.length; e++) {
+			if (body[i][0][0] == food[e][0] && body[i][0][1] == food[e][1]) {
+				score[i] += foodValue;
+				if (score[i] > highscore[i]) {highscore[i] = score[i];}
+				food.splice(e, 1);
+				if (score[i] < 1) {deathRow[i] = true; continue; }
+				while (body[i].length > score[i]) {body[i].pop()}
+			}
+		}
+	}
+}
+
+function eatPlayerFood() {
+	for (var i = 0; i < nOfPlayers; i++) {
+		for (var e of playerFood) {
+			for (var f = 0; f < e.length; e++) {
+				if (body[i][0][0] == e[f][0] && body[i][0][1] == e[f][1] && active[i]) {
+					score[i] += e[f][2];
+					if (score[i] > highscore[i]) {highscore[i] = score[i];}
+					e.splice(f, 1);
+				}
+			}
 		}
 	}
 }
@@ -151,6 +209,10 @@ function die() {
 function killPlayers() {
 	for (var i = 0; i < nOfPlayers; i++) {
 		if (deathRow[i]) {
+			var playerFoodValue = Math.floor(body[i].length/(foodValue*2))*foodValue;
+			if (playerFoodValue > 0 && score[i] > 0 && $("#pFoodBox").checked) {
+				playerFood[i].unshift([body[i][0][0], body[i][0][1], playerFoodValue]);
+			}
 			deadPlayers.unshift([[...body[i]], colors[i]]);
 			body[i] = [[...startLocation[i]]];
 			direction[i] = startDirection[i];
@@ -161,8 +223,15 @@ function killPlayers() {
 }
 
 function calculate() {
+	for (var i = 0; i < food.length; i++) {
+		if (food[i][0] > dimension[0] - 1 || food[i][1] > dimension[1] - 1) {
+			food.splice(i,1);
+		}
+	}
 	directPlayers();
 	eatFood();
+	eatPlayerFood();
+	if (food.length < amtOfFood) { generateFood() }
 	die();
 }
 
@@ -177,9 +246,6 @@ function resizeCanvas() {
 		[0, dimension[1]-1],
 		[dimension[0]-1, dimension[1]-1],
 	];
-	if (food[0] > dimension[0] - 1 || food[1] > dimension[1] - 1) {
-		generateFood();
-	}
 }
 
 function grid() {
@@ -199,10 +265,23 @@ function grid() {
 }
 
 function drawFood() {
-	ctx.beginPath();
-	ctx.arc(food[0]*unit + unit/2, food[1]*unit + unit/2, unit/2, 0, Math.PI*2);
-	ctx.fillStyle = "purple";
-	ctx.fill();
+	for (var i of food) {
+		ctx.beginPath();
+		ctx.arc(i[0]*unit + unit/2, i[1]*unit + unit/2, unit/2, 0, Math.PI*2);
+		ctx.fillStyle = "purple";
+		ctx.fill();
+	}
+}
+
+function drawPlayerFood() {
+	for (var i=0; i < playerFood.length; i++) {
+		for (var f of playerFood[i]) {
+			ctx.beginPath();
+			ctx.arc(f[0]*unit + unit/2, f[1]*unit + unit/2, unit/2, 0, Math.PI*2);
+			ctx.fillStyle = colors[i];
+			ctx.fill();
+		}
+	}
 }
 
 function drawBody(b) {
@@ -219,7 +298,7 @@ function drawBody(b) {
 function drawPlayers() {
 	ctx.lineCap = "square";
 	ctx.lineWidth = unit - 2;
-	ctx.globalAlpha = 0.3;
+	ctx.globalAlpha = 0.5;
 	for (var i = 0; i < deadPlayers.length; i++) {
 		ctx.strokeStyle = deadPlayers[i][1];
 		drawBody(deadPlayers[i][0]);
@@ -277,6 +356,12 @@ function scoreBoards() {
 			ctx.fillText(`Control with ${controlKeys}!`, TBLoc[i][0], TBLoc[i][1] + 16);
 		}
 	}
+	if (!paused) {
+		ctx.beginPath();
+		ctx.textAlign = "center";
+		ctx.fillText('Press "Esc" to pause', canvas.width/2, 18);
+		ctx.textAlign= "left";
+	}
 }
 
 function draw() {
@@ -284,6 +369,7 @@ function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	grid();
 	drawFood();
+	drawPlayerFood();
 	drawPlayers();
 	spawnPoints();
 	scoreBoards();
@@ -302,8 +388,6 @@ function main() {
 
 function init() {
 	resizeCanvas();
-	food[0] = Math.floor(Math.random() * dimension[0]);
-	food[1] = Math.floor(Math.random() * dimension[1]);
 	body = [
 		[[...startLocation[0]]],
 		[[...startLocation[1]]],
@@ -321,7 +405,7 @@ const
 	cScheme = ["light", "dark"],
 	bgColor = ["#fff","#111"];
 
-var darkMode = Number(localStorage.getItem("darkMode")) || 0; // 0 for light mode, 1 for dark mode
+var darkMode = false;
 
 function refreshColors() {
 	var i = Number(darkMode);

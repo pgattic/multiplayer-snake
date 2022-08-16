@@ -1,48 +1,69 @@
 <!DOCTYPE html>
 <html lang="en-us">
+	<head>
+		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114106362-3"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
 
-<head>
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114106362-3"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-		function gtag(){dataLayer.push(arguments);}
-		gtag('js', new Date());
+			gtag('config', 'UA-114106362-3');
+		</script>
 
-		gtag('config', 'UA-114106362-3');
-	</script>
-
-	<link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
-	<link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
-
-
-	<title>Multiplayer Snake</title>
-	<meta name="robots" content="noindex">
-	<meta charset="utf-8" />
-	<meta name="description" content="pgattic's Web Games">
-	<meta name="author" content="Preston Corless, SaveState">
-	<style>
-		
-		* { background: var(--bg-color) }
-		canvas {
-			padding: 0;
-			display: block;
-			margin: 0 auto;
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			-ms-transform: translate(-50%, -50%);
-			transform: translate(-50%, -50%);
-		}
-	</style>
-</head>
-
-<body>
-
-	<canvas id="canvas" width="100%" height="100%">Sorry, your browser doesn't support HTML5 Canvas! Choose a different browser please!</canvas>
-
-	<script src="script.js"></script>
-
-</body>
-
+		<title>Multiplayer Snake</title>
+		<meta name="robots" content="noindex">
+		<meta charset="utf-8" />
+		<meta name="description" content="pgattic's Web Games">
+		<meta name="author" content="Preston Corless, SaveState">
+		<link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+		<link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+		<style>
+			canvas {
+				padding: 0;
+				display: block;
+				margin: 0 auto;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				-ms-transform: translate(-50%, -50%);
+				transform: translate(-50%, -50%);
+			}
+			#menu {
+				background: #8888;
+				font-family: Arial;
+				margin: 0;
+				padding: 10px;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				-ms-transform: translate(-50%, -50%);
+				transform: translate(-50%, -50%);
+				place-items: center;
+				border-radius: 5px;
+			}
+			#menu>* {
+				margin: 3px auto;
+				width: fit-content;
+			}
+			input[type=number] {
+				width: 32px;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="canvas" width="100%" height="100%">Sorry, your browser doesn't support HTML5 Canvas! Choose a different browser please!</canvas>
+		<form id="menu" oninput="applySettings()">
+			<h1>Settings</h1>
+			<p>Dark Mode:<input type="checkbox"id="darkBox"></p>
+			<p>Tile Size: <span id="unitOut">24</span>px<input type="range" value="24" min="1" max="64" id="unitBox"></p>
+			<p>Food Value: <input type="number" value="5" id="foodValBox"></p>
+			<p>Amount of Food: <input type="number" value="3" id="foodAmtBox"></p>
+			<p>Start Length: <input type="number" value="5" id="startScoreBox"></p>
+			<div><input type="button" value="Resume" onclick="togglePause()"><input type="button" value="Reset Options" onclick="resetOptions()"></div>
+			<p>Players Drop Food:<input type="checkbox"id="pFoodBox"checked="true"></p>
+			<small>Ver 2.0</small>
+		</form>
+		<script src="script.js"></script>
+	</body>
 </html>
