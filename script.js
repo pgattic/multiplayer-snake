@@ -93,6 +93,7 @@ function resetOptions() {
 	foodAmtBox.value = 3;
 	$("#startScoreBox").value = 5;
 	$("#pFoodBox").checked = true;
+	$("#loopBox").checked = false;
 	applySettings();
 }
 
@@ -127,7 +128,11 @@ function directPlayers() {
 			if (keyQueue[i].length > 0) {direction[i] = keyQueue[i][0]; keyQueue[i].shift(); }
 			var potential = shiftPlayer([...body[i][0]], direction[i]);
 			if (potential[0] < 0 || potential[0] > dimension[0]-1 || potential[1] < 0 || potential[1] > dimension[1]-1) {
-				deathRow[i] = true;
+				if ($("#loopBox").checked) {
+					body[i].unshift([(potential[0]+dimension[0])%dimension[0],(potential[1]+dimension[1])%dimension[1]]); // loops player head to other end of screen
+				} else {
+					deathRow[i] = true;
+				}
 			} else {
 				body[i].unshift(potential);
 				if (body[i].length > score[i]) { body[i].pop(); }
@@ -288,7 +293,14 @@ function drawBody(b) {
 	ctx.beginPath();
 	ctx.moveTo(b[0][0]*unit+unit/2, b[0][1]*unit+unit/2);
 	for (var s = 1; s < b.length; s++) {
-		if (s == b.length - 1 || !(b[s-1][0] == b[s+1][0] || b[s-1][1] == b[s+1][1])) {
+		if (Math.abs(b[s-1][0]-b[s][0]) > 1 || Math.abs(b[s-1][1]-b[s][1]) > 1) { // if segments are detached
+			ctx.lineTo(b[s-1][0]*unit+unit/2, b[s-1][1]*unit+unit/2);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(b[s][0]*unit+unit/2, b[s][1]*unit+unit/2);
+			ctx.lineTo(b[s][0]*unit+unit/2, b[s][1]*unit+unit/2);
+		}
+		if (s == b.length - 1 || !(b[s-1][0] == b[s+1][0] || b[s-1][1] == b[s+1][1])) { // Makes the lines of the snakes draw from points of turning instead of every segment
 			ctx.lineTo(b[s][0]*unit+unit/2, b[s][1]*unit+unit/2);
 		}
 	}
@@ -309,11 +321,15 @@ function drawPlayers() {
 			deadPlayers.splice(i, 1);
 		}
 	}
-	ctx.globalAlpha = 1;
 	for (var i = 0; i < nOfPlayers; i++) {
 		if (active[i]) {
 			ctx.strokeStyle = colors[i];
+			ctx.globalAlpha = 1;
 			drawBody(body[i]);
+			ctx.beginPath();
+			ctx.globalAlpha = 0.5;
+			ctx.fillStyle = "#000";
+			ctx.fillRect(body[i][0][0]*unit + unit/3, body[i][0][1]*unit + unit/3, unit/3, unit/3);
 		}
 	}
 }
