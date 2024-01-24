@@ -18,7 +18,7 @@ const
 		["arrowup","arrowleft","arrowdown","arrowright"]
 	],
 	shiftPlayer = (p, d) => {	// send coords of head [x, y] and direction and this gives the next location
-		//var temp = [...p];
+		//let temp = [...p];
 		switch (d) {
 			case 0:		// up
 				p[1]--;
@@ -36,7 +36,7 @@ const
 		return p;
 	};
 
-var
+let
 	startScore = 5,
 	foodValue = 5,
 	amtOfFood = 3,
@@ -98,12 +98,13 @@ function resetOptions() {
 }
 
 document.onkeydown = (e) => {
+	let key;
 	if (e.key == "Escape") { togglePause() }
 	if (!paused) {
-		var key = e.key.toLowerCase();
-		for (var p = 0; p < controls.length; p++) {
+		key = e.key.toLowerCase();
+		for (let p = 0; p < controls.length; p++) {
 			if (active[p]) {
-				for (var c = 0; c < controls[p].length; c++) {
+				for (let c = 0; c < controls[p].length; c++) {
 					if (key == controls[p][c] && c%2 != (keyQueue[p].length?keyQueue[p][keyQueue[p].length-1]:direction[p])%2) {
 						keyQueue[p].push(c);
 					}
@@ -111,7 +112,7 @@ document.onkeydown = (e) => {
 			}
 		}
 	}
-	var num = Number(key)-1;
+	let num = Number(key)-1;
 	if (num < 4 && num >= 0 && e.target.tagName == "BODY") { // spawn players
 		if (active[num]) {
 			deathRow[num] = true;
@@ -123,10 +124,10 @@ document.onkeydown = (e) => {
 }
 
 function directPlayers() {
-	for (var i = 0; i < nOfPlayers; i++) {
+	for (let i = 0; i < nOfPlayers; i++) {
 		if (active[i]) {
 			if (keyQueue[i].length > 0) {direction[i] = keyQueue[i][0]; keyQueue[i].shift(); }
-			var potential = shiftPlayer([...body[i][0]], direction[i]);
+			let potential = shiftPlayer([...body[i][0]], direction[i]);
 			if (potential[0] < 0 || potential[0] > dimension[0]-1 || potential[1] < 0 || potential[1] > dimension[1]-1) {
 				if ($("#loopBox").checked) {
 					body[i].unshift([(potential[0]+dimension[0])%dimension[0],(potential[1]+dimension[1])%dimension[1]]); // loops player head to other end of screen
@@ -142,20 +143,20 @@ function directPlayers() {
 }
 
 function generateFood() {
-	var foodCheck = true;
-	var foodX, foodY;
-	var loopCounter = 0;
+	let foodCheck = true;
+	let foodX, foodY;
+	let loopCounter = 0;
 	do {
 		foodCheck = true;
 		foodX = Math.floor(Math.random() * dimension[0]);
 		foodY = Math.floor(Math.random() * dimension[1]);
 		loopCounter++;
-		for (var i = 0; i < nOfPlayers; i++) {
-			for (var e = 0; e < body[i].length; e++) {
+		for (let i = 0; i < nOfPlayers; i++) {
+			for (let e = 0; e < body[i].length; e++) {
 				if (body[i][e][0] == foodX && body[i][e][1] == foodY) {
 					foodCheck = false;
 				}
-				for (var f of food) {
+				for (let f of food) {
 					if (f[0] == foodX && f[1] == foodY) {
 						foodCheck = false;
 					}
@@ -168,8 +169,8 @@ function generateFood() {
 
 
 function eatFood() {
-	for (var i = 0; i < nOfPlayers; i++) {
-		for (var e = 0; e < food.length; e++) {
+	for (let i = 0; i < nOfPlayers; i++) {
+		for (let e = 0; e < food.length; e++) {
 			if (body[i][0][0] == food[e][0] && body[i][0][1] == food[e][1]) {
 				score[i] += foodValue;
 				if (score[i] > highscore[i]) {highscore[i] = score[i];}
@@ -182,9 +183,9 @@ function eatFood() {
 }
 
 function eatPlayerFood() {
-	for (var i = 0; i < nOfPlayers; i++) {
-		for (var e of playerFood) {
-			for (var f = 0; f < e.length; e++) {
+	for (let i = 0; i < nOfPlayers; i++) {
+		for (let e of playerFood) {
+			for (let f = 0; f < e.length; e++) {
 				if (body[i][0][0] == e[f][0] && body[i][0][1] == e[f][1] && active[i]) {
 					score[i] += e[f][2];
 					if (score[i] > highscore[i]) {highscore[i] = score[i];}
@@ -196,11 +197,11 @@ function eatPlayerFood() {
 }
 
 function die() {
-	for (var i = 0; i < nOfPlayers; i++) { // player dying
+	for (let i = 0; i < nOfPlayers; i++) { // player dying
 		if (active[i]) {
-			for (var e = 0; e < nOfPlayers; e++) { // player being run into
+			for (let e = 0; e < nOfPlayers; e++) { // player being run into
 				if (active[e]) {
-					for (var t = (i==e?1:0); t < body[e].length; t++) {
+					for (let t = (i==e?1:0); t < body[e].length; t++) {
 						if (body[i][0][0] == body[e][t][0] && body[i][0][1] == body[e][t][1]) {
 							deathRow[i] = true;
 						}
@@ -212,9 +213,9 @@ function die() {
 }
 
 function killPlayers() {
-	for (var i = 0; i < nOfPlayers; i++) {
+	for (let i = 0; i < nOfPlayers; i++) {
 		if (deathRow[i]) {
-			var playerFoodValue = Math.floor(body[i].length/(foodValue*2))*foodValue;
+			let playerFoodValue = Math.floor(body[i].length/(foodValue*2))*foodValue;
 			if (playerFoodValue > 0 && score[i] > 0 && $("#pFoodBox").checked) {
 				playerFood[i].unshift([body[i][0][0], body[i][0][1], playerFoodValue]);
 			}
@@ -228,7 +229,7 @@ function killPlayers() {
 }
 
 function calculate() {
-	for (var i = 0; i < food.length; i++) {
+	for (let i = 0; i < food.length; i++) {
 		if (food[i][0] > dimension[0] - 1 || food[i][1] > dimension[1] - 1) {
 			food.splice(i,1);
 		}
@@ -255,13 +256,13 @@ function resizeCanvas() {
 
 function grid() {
 	ctx.strokeStyle = "gray";
-	for (var i = 0; i < dimension[0]+1; i++) {
+	for (let i = 0; i < dimension[0]+1; i++) {
 		ctx.beginPath();
 		ctx.moveTo(i * unit, 0);
 		ctx.lineTo(i * unit, canvas.height);
 		ctx.stroke();
 	}
-	for (var i = 0; i < dimension[1]+1; i++) {
+	for (let i = 0; i < dimension[1]+1; i++) {
 		ctx.beginPath();
 		ctx.moveTo(0, i * unit);
 		ctx.lineTo(canvas.width, i * unit);
@@ -270,7 +271,7 @@ function grid() {
 }
 
 function drawFood() {
-	for (var i of food) {
+	for (let i of food) {
 		ctx.beginPath();
 		ctx.arc(i[0]*unit + unit/2, i[1]*unit + unit/2, unit/2, 0, Math.PI*2);
 		ctx.fillStyle = "purple";
@@ -279,8 +280,8 @@ function drawFood() {
 }
 
 function drawPlayerFood() {
-	for (var i=0; i < playerFood.length; i++) {
-		for (var f of playerFood[i]) {
+	for (let i=0; i < playerFood.length; i++) {
+		for (let f of playerFood[i]) {
 			ctx.beginPath();
 			ctx.arc(f[0]*unit + unit/2, f[1]*unit + unit/2, unit/2, 0, Math.PI*2);
 			ctx.fillStyle = colors[i];
@@ -292,7 +293,7 @@ function drawPlayerFood() {
 function drawBody(b) {
 	ctx.beginPath();
 	ctx.moveTo(b[0][0]*unit+unit/2, b[0][1]*unit+unit/2);
-	for (var s = 1; s < b.length; s++) {
+	for (let s = 1; s < b.length; s++) {
 		if (Math.abs(b[s-1][0]-b[s][0]) > 1 || Math.abs(b[s-1][1]-b[s][1]) > 1) { // if segments are detached
 			ctx.lineTo(b[s-1][0]*unit+unit/2, b[s-1][1]*unit+unit/2);
 			ctx.stroke();
@@ -311,17 +312,17 @@ function drawPlayers() {
 	ctx.lineCap = "square";
 	ctx.lineWidth = unit - 2;
 	ctx.globalAlpha = 0.5;
-	for (var i = 0; i < deadPlayers.length; i++) {
+	for (let i = 0; i < deadPlayers.length; i++) {
 		ctx.strokeStyle = deadPlayers[i][1];
 		drawBody(deadPlayers[i][0]);
 	}
-	for (var i = 0; i < deadPlayers.length; i++) {
+	for (let i = 0; i < deadPlayers.length; i++) {
 		deadPlayers[i][0].pop();
 		if (deadPlayers[i][0].length < 1) {
 			deadPlayers.splice(i, 1);
 		}
 	}
-	for (var i = 0; i < nOfPlayers; i++) {
+	for (let i = 0; i < nOfPlayers; i++) {
 		if (active[i]) {
 			ctx.strokeStyle = colors[i];
 			ctx.globalAlpha = 1;
@@ -335,10 +336,10 @@ function drawPlayers() {
 }
 
 function spawnPoints() {
-	for (var i = 0; i < nOfPlayers; i++) {
-		var x = (startLocation[i][0] + 0.5) * unit;
-		var y = (startLocation[i][1] + 0.5) * unit;
-		var gradient = ctx.createRadialGradient(x, y, 0, x, y, 128);
+	for (let i = 0; i < nOfPlayers; i++) {
+		let x = (startLocation[i][0] + 0.5) * unit;
+		let y = (startLocation[i][1] + 0.5) * unit;
+		let gradient = ctx.createRadialGradient(x, y, 0, x, y, 128);
 		gradient.addColorStop(0, colors[i]);
 		gradient.addColorStop(1, "rgba(0,0,0,0)");
 		ctx.beginPath();
@@ -351,7 +352,7 @@ function spawnPoints() {
 }
 
 function scoreBoards() {
-	var TBLoc = [
+	let TBLoc = [
 		[8, 20, "left"],
 		[canvas.width - 8, 20, "right"],
 		[8, canvas.height - 24, "left"],
@@ -360,14 +361,14 @@ function scoreBoards() {
 	ctx.font = "bold 16px Arial"
 	ctx.fillStyle = bgColor[Math.abs(darkMode-1)];
 	ctx.beginPath();
-	for (var i = 0; i < nOfPlayers; i++) {
+	for (let i = 0; i < nOfPlayers; i++) {
 		ctx.textAlign =  TBLoc[i][2];
 		if (active[i]) {
 			ctx.fillText(`Score: ${score[i]}`, TBLoc[i][0], TBLoc[i][1]);
 			ctx.fillText(`Highscore: ${highscore[i]}`, TBLoc[i][0], TBLoc[i][1] + 16);
 		} else {
 			ctx.fillText((`Join with the "${i+1}" key!`), TBLoc[i][0], TBLoc[i][1]);
-			var controlKeys = (controls[i][0]+controls[i][1]+controls[i][2]+controls[i][3]).toUpperCase();
+			let controlKeys = (controls[i][0]+controls[i][1]+controls[i][2]+controls[i][3]).toUpperCase();
 			if (controlKeys.length > 4) {controlKeys = "the arrow keys"}
 			ctx.fillText(`Control with ${controlKeys}!`, TBLoc[i][0], TBLoc[i][1] + 16);
 		}
@@ -421,10 +422,10 @@ const
 	cScheme = ["light", "dark"],
 	bgColor = ["#fff","#111"];
 
-var darkMode = false;
+let darkMode = false;
 
 function refreshColors() {
-	var i = Number(darkMode);
+	let i = Number(darkMode);
 	$(":root").style="color-scheme: " + cScheme[i];
 	rootColors.setProperty("--bg-color", bgColor[i]);
 }
